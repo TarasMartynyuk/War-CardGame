@@ -6,38 +6,34 @@
 #include <sstream>
 #include <cassert>
 #include <iterator>
-
 using namespace std;
 //region defs
 
-class Card;
-struct GameDecks;
-
-bool lexical_cast(const std::string& s, int& i);
-// "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"
-
+class Card; struct GameDecks;
 enum Value {
     Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, J, Q, K, A
 };
-string ValueToString(Value value);
-
 enum State {
     FirstWins, SecondWins, Pat, War, Battle
 };
-bool isEndGameState(State state);
-string endGameToString(State state);
 
-void readPlayerDeck(deque<Card>&);
+bool lexical_cast(const std::string& s, int& i);
 
+string ValueToString(Value);
+
+bool isEndGameState(State);
+string endGameToString(State);
+
+void readPlayerDeck(queue<Card>&);
 void print(GameDecks&);
 Card pop_return(queue<Card>&);
 
 void mockDecks(GameDecks&);
 void mockDecksWar(GameDecks&);
 bool checkIfNoMoreCards(GameDecks&, State& whoWon);
-
 State drawToWarQueues(GameDecks& decks);
-void pipe(deque<Card>&, queue<Card>&);
+
+void pipe(queue<Card>&, queue<Card>&);
 //endregion
 //region struct
 
@@ -79,8 +75,8 @@ public:
     }
 
     const Value& getValue()const {return value; }
+//    Card& operator=(const Card& other) = default;
 
-    Card& operator=(const Card& other) = default;
 private:
     Value value;
     Value parseChar(char ch) {
@@ -98,6 +94,9 @@ private:
         }
     }
 };
+bool operator==(const Card& l, const Card& r) {
+    return l.getValue() == r.getValue();
+}
 ostream& operator<< (ostream&, const Card&);
 //endregion
 //region algorithm
@@ -141,7 +140,6 @@ State doWar(GameDecks& decks)
             return State::Pat;
         }
 
-        assert(after_draw == State::War);
         //battle
         State _;
         if (checkIfNoMoreCards(decks, _)) {
@@ -155,14 +153,22 @@ State doWar(GameDecks& decks)
 
         int comp = first_card.compareTo(second_card);
         // continue the war
-        if (comp > 0) {
-            // add both war qs to first player
-
-        } else if (comp < 0) {
-            // add both war queues to second player
+        if(comp == 0) {
+            assert(after_draw == State::War);
+            continue;
         }
 
-        assert(after_draw == State::War);
+        if (comp > 0) {
+            // add both war qs to first player's deck
+            pipe(decks.first_war_cards, decks.first_deck);
+            pipe(decks.second_war_cards, decks.first_deck);
+
+        } else { // comp < 0
+            // add both war queues to second player's deck
+            pipe(decks.first_war_cards, decks.second_deck);
+            pipe(decks.second_war_cards, decks.second_deck);
+        }
+        return State::Battle;
     }
 }
 
@@ -180,50 +186,49 @@ State drawToWarQueues(GameDecks& decks) {
     return State::War;
 }
 
-string playWar(GameDecks& decks) {
+string playWarGame(GameDecks& decks) {
 
     while(true) {
         // try battle
-        auto postBattleState = doBattle(decks);
+        auto post_battle_state = doBattle(decks);
 
-        if (isEndGameState(postBattleState)) {
-            return endGameToString(postBattleState);
+        if (isEndGameState(post_battle_state)) {
+            return endGameToString(post_battle_state);
         }
 
-        if(postBattleState == State::War) {
-            doWar(decks);
+        if(post_battle_state == State::War) {
+            State after_war = doWar(decks);
+            if(isEndGameState(after_war)) {
+                return endGameToString(after_war);
+            }
+            assert(after_war == State::Battle);
         }
     }
-}
-
-//void drawToWarQueuesOnce(GameDecks& decks) {
-//
-//}
-//endregion
+}//endregion
 
 int main()
 {
     GameDecks decks;
-//    readPlayerDeck(decks.first_deck);
-//    readPlayerDeck(decks.second_deck);
+    readPlayerDeck(decks.first_deck);
+    readPlayerDeck(decks.second_deck);
 //    mockDecks(decks);
-    mockDecksWar(decks);
+//    mockDecksWar(decks);
 
 
     print(decks);
 //    cerr << second_deck.front().compareTo(second_deck.front());
 
-    cout << playWar(decks) << endl;
+    cout << playWarGame(decks) << endl;
 }
 
 //region impls
 
-void readPlayerDeck(deque<Card>& deck) {
+void readPlayerDeck(queue<Card>& deck) {
     int n; cin >> n; cin.ignore();
 
     for (int i = 0; i < n; i++) {
         string card_str; cin >> card_str; cin.ignore();
-        deck.push_back(Card(card_str));
+        deck.push(Card(card_str));
     }
 }
 
@@ -282,7 +287,10 @@ void print(GameDecks& decks) {
         second_copy.push(decks.second_deck.front());
         decks.second_deck.pop();
     }
+
     cerr << "\n";
+    pipe(first_copy, decks.first_deck);
+    pipe(second_copy, decks.second_deck);
 }
 
 Card pop_return(queue<Card>& q) {
@@ -367,9 +375,10 @@ void mockDecksWar(GameDecks& decks) {
     });
 }
 
-void pipe(deque<Card>& to, queue<Card>& from) {
+void pipe(queue<Card>& from, queue<Card>& to) {
+    assert(to != from);
     while(! from.empty()) {
-        to.push_back(pop_return(from));
+        to.push(pop_return(from));
     }
 }
 
