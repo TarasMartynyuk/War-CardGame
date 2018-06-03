@@ -4,42 +4,82 @@
 #include <algorithm>
 #include <queue>
 #include <sstream>
+#include <cassert>
+#include <iterator>
 
 using namespace std;
 //region defs
 
+class Card;
 bool lexical_cast(const std::string& s, int& i);
 
 const string kCardPowers[13]{
     "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"
 };
 
-int compare(const string&, const string&);
+enum Value {
+    Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, J, Q, K, A
+};
 
-queue<string> readPlayerCards();
+string ValueToString(Value value);
+
+deque<Card> readPlayerCards();
 
 class Card
 {
 public:
     Card(const string& str)  {
+        string valueStr = str.substr(0, str.size() -1);
 
+//        cerr  <<  str << " : "  << valueStr << endl;
+        assert(valueStr.size() <= 2);
+
+        int digit_value = -1;
+        bool is_digit = lexical_cast(valueStr, digit_value);
+
+        assert(digit_value >= 2 && digit_value <= 10 || !is_digit);
+        value = is_digit ? static_cast<Value>(digit_value - 2) : parseChar(valueStr[0]);
     }
 
-private:
-    bool isDigit;
-    int digitValue;
-    char charValue;
+    int compareTo(const Card other) {
+    }
 
+    const Value& getValue()const {return value; }
+
+    Card& operator=(const Card& other) = default;
+private:
+    Value value;
+    Value parseChar(char ch) {
+        switch (ch) {
+            case 'J':
+                return Value::J;
+            case 'Q':
+                return Value::Q;
+            case 'K':
+                return Value::K;
+            case 'A':
+                return Value::A;
+            default:
+                throw invalid_argument("can't convert char {" + to_string(ch) + "} to Value");
+        }
+    }
 };
+ostream& operator<< (ostream&, const Card&);
 
 //endregion
 
 int main()
 {
 
-    int i = -1;
-    cout << lexical_cast("10", i);
-    cout << "\n" << i;
+    auto first_deck = readPlayerCards();
+    auto second_deck = readPlayerCards();
+
+    ostream_iterator <Card> output(cerr, " ");
+    cerr << "--------first-----------\n";
+    std::copy(first_deck.begin(), first_deck.end(), output);
+    cerr << "\n--------second-----------\n";
+    std::copy(second_deck.begin(), second_deck.end(), output);
+
 
     return 0;
 
@@ -57,14 +97,16 @@ int main()
 }
 
 
-queue<string> readPlayerCards(){
-    int n; // the number of cards for player 1
-    cin >> n; cin.ignore();
+deque<Card> readPlayerCards(){
+    int n; cin >> n; cin.ignore();
+
+    deque<Card> cards;
     for (int i = 0; i < n; i++) {
-        string cardp1; // the n cards of player 1
-        cin >> cardp1;
-        cin.ignore();
+        string card_str; cin >> card_str; cin.ignore();
+        cards.push_back(Card(card_str));
     }
+
+    return cards;
 }
 
 bool lexical_cast(const std::string& s, int& i) {
@@ -76,4 +118,31 @@ bool lexical_cast(const std::string& s, int& i) {
     }
     i = test;
     return true;
+}
+
+ostream& operator<<(ostream& os, const Card& card) {
+    os << ValueToString(card.getValue());
+}
+
+string ValueToString(Value value){
+
+    int int_val = (int) value;
+    if(int_val <= 8) {
+        return
+        to_string(int_val
+        + 2);
+    } else {
+        switch (value) {
+            case J:
+                return "J";
+            case Q:
+                return "Q";
+            case K:
+                return "K";
+            case A:
+                return "A";
+            default:
+                throw invalid_argument("ValueToString error");
+        }
+    }
 }
