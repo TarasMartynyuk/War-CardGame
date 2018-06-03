@@ -33,6 +33,7 @@ void print(const GameDecks&);
 Card pop_front(deque<Card>&);
 
 void mockDecks(GameDecks&);
+bool checkIfNoMoreCards(GameDecks&, State& whoWon);
 //endregion
 //region struct
 
@@ -97,15 +98,13 @@ private:
 };
 ostream& operator<< (ostream&, const Card&);
 //endregion
-//region func
+//region algorithm
 
 State doBattle(GameDecks& decks)
 {
-    if(decks.first_deck.empty()) {
-         return State::SecondWins;
-    }
-    if(decks.second_deck.empty()) {
-        return State::FirstWins;
+    State whoWon = State::Battle;
+    if(checkIfNoMoreCards(decks, whoWon)) {
+        return whoWon;
     }
 
     Card first_card = pop_front(decks.first_deck);
@@ -135,7 +134,13 @@ State doWar(GameDecks& decks)
 
 }
 
-//State drawToWarQueues()
+State drawToWarQueues(GameDecks& decks) {
+
+    for (int i = 0; i < 3; ++i) {
+
+    }
+
+}
 
 string playWar(GameDecks& decks) {
 
@@ -143,9 +148,9 @@ string playWar(GameDecks& decks) {
         // try battle
         auto postBattleState = doBattle(decks);
 
-//        if(postBattleState == State::War) {
-//
-//        }
+        if(postBattleState == State::War) {
+
+        }
 
         if(isEndGameState(postBattleState)) {
             return endGameToString(postBattleState);
@@ -167,6 +172,8 @@ int main()
 
     cout << playWar(decks) << endl;
 }
+
+//region impls
 
 void readPlayerDeck(deque<Card>& deck) {
     int n; cin >> n; cin.ignore();
@@ -268,3 +275,22 @@ void mockDecks(GameDecks& decks) {
         Card("JZ")
     };
 }
+// passing the whole struct to minimize the code
+bool checkIfNoMoreCards(GameDecks& decks, State& whoWon) {
+    bool first_lost = decks.first_deck.empty();
+    bool second_lost = decks.second_deck.empty();
+
+    if(first_lost && second_lost) {
+        whoWon = State::Pat;
+        return true;
+    } else if (! first_lost) {
+        whoWon = State::FirstWins;
+        return true;
+    } else {
+        whoWon = State::SecondWins;
+        return true;
+    }
+    return false;
+}
+
+//endregion
