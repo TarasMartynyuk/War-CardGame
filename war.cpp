@@ -34,6 +34,9 @@ Card pop_front(deque<Card>&);
 
 void mockDecks(GameDecks&);
 bool checkIfNoMoreCards(GameDecks&, State& whoWon);
+
+State drawToWarQueues(GameDecks& decks);
+
 //endregion
 //region struct
 
@@ -100,6 +103,7 @@ ostream& operator<< (ostream&, const Card&);
 //endregion
 //region algorithm
 
+// can return end or war states
 State doBattle(GameDecks& decks)
 {
     State whoWon = State::Battle;
@@ -121,25 +125,59 @@ State doBattle(GameDecks& decks)
         if(comp > 0) { // first player won the battle
             decks.first_deck.push_back(first_card);
             decks.first_deck.push_back(second_card);
-        } else { // second won
+        } else { // second won the battle
             decks.second_deck.push_back(first_card);
             decks.second_deck.push_back(second_card);
         }
         return State::Battle;
     }
 }
-
+// can return end or battle states
 State doWar(GameDecks& decks)
 {
+    while (true) {
+        State after_draw = drawToWarQueues(decks);
+        if (isEndGameState(after_draw)) {
+            assert(after_draw == State::Pat);
+            return State::Pat;
+        }
 
+        assert(after_draw == State::War);
+        //battle
+        State _;
+        if (checkIfNoMoreCards(decks, _)) {
+            return State::Pat;
+        }
+
+        Card first_card = pop_front(decks.first_deck);
+        decks.first_war_cards.push(first_card);
+        Card second_card = pop_front(decks.second_deck);
+        decks.second_war_cards.push(second_card);
+
+        int comp = first_card.compareTo(second_card);
+        // continue the war
+        if (comp > 0) {
+            // add both war qs to first player
+        } else if (comp < 0) {
+            // add both war queues to second player
+        }
+
+        assert(after_draw == State::War);
+    }
 }
 
+// can return end or war states
 State drawToWarQueues(GameDecks& decks) {
-
     for (int i = 0; i < 3; ++i) {
+        State _;
+        if(checkIfNoMoreCards(decks, _)) {
+            return State::Pat;
+        }
 
+        decks.first_war_cards.push(pop_front(decks.first_deck));
+        decks.second_war_cards.push(pop_front(decks.second_deck));
     }
-
+    return State::War;
 }
 
 string playWar(GameDecks& decks) {
@@ -157,6 +195,10 @@ string playWar(GameDecks& decks) {
         }
     }
 }
+
+//void drawToWarQueuesOnce(GameDecks& decks) {
+//
+//}
 //endregion
 
 int main()
