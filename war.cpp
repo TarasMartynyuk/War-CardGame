@@ -24,7 +24,7 @@ enum Value {
 string ValueToString(Value value);
 
 deque<Card> readPlayerCards();
-
+void print (const deque<Card>&, const deque<Card>&);
 class Card
 {
 public:
@@ -42,6 +42,16 @@ public:
     }
 
     int compareTo(const Card other) {
+        int this_val = (int) getValue();
+        int other_val = (int) other.getValue();
+
+        if(this_val == other_val) {
+            return 0;
+        } else if (this_val > other_val) {
+            return 1;
+        } else {
+            return -1;
+        }
     }
 
     const Value& getValue()const {return value; }
@@ -70,16 +80,15 @@ ostream& operator<< (ostream&, const Card&);
 
 int main()
 {
-
     auto first_deck = readPlayerCards();
     auto second_deck = readPlayerCards();
 
-    ostream_iterator <Card> output(cerr, " ");
-    cerr << "--------first-----------\n";
-    std::copy(first_deck.begin(), first_deck.end(), output);
-    cerr << "\n--------second-----------\n";
-    std::copy(second_deck.begin(), second_deck.end(), output);
 
+    print(first_deck, second_deck);
+
+//    first_deck.pop_front();
+//    first_deck.pop_front();
+    cerr << second_deck.front().compareTo(second_deck.front());
 
     return 0;
 
@@ -145,4 +154,13 @@ string ValueToString(Value value){
                 throw invalid_argument("ValueToString error");
         }
     }
+}
+
+void print(const deque<Card>& deque1, const deque<Card>& deque2) {
+    ostream_iterator<Card> output(cerr, " ");
+    cerr << "--------first-----------\n";
+    std::copy(deque1.begin(), deque1.end(), output);
+    cerr << "\n--------second-----------\n";
+    std::copy(deque2.begin(), deque2.end(), output);
+    cerr << "\n";
 }
