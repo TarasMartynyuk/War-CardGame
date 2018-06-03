@@ -12,19 +12,27 @@ using namespace std;
 
 class Card;
 bool lexical_cast(const std::string& s, int& i);
-
-const string kCardPowers[13]{
-    "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"
-};
-
+// "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"
 enum Value {
     Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, J, Q, K, A
 };
-
 string ValueToString(Value value);
+enum State {
+    FirstWins, SecondWins, Pat, War, Battle
+};
+bool isEndGameState(State state);
+string endGameToString(State state);
 
 deque<Card> readPlayerCards();
 void print (const deque<Card>&, const deque<Card>&);
+Card pop_front(deque<Card>&);
+
+deque<Card> mockFirst();
+deque<Card> mockSecond();
+
+//endregion
+//region struct
+
 class Card
 {
 public:
@@ -75,36 +83,73 @@ private:
     }
 };
 ostream& operator<< (ostream&, const Card&);
+//endregion
+//region func
 
+State doBattle(
+    deque<Card>& first_deck,
+    deque<Card>& second_deck,
+//    bool is_war,
+    queue<Card>& first_war_cards,
+    queue<Card>& second_war_cards)
+{
+    if(first_deck.empty()) {
+         return State::SecondWins;
+    }
+    if(second_deck.empty()) {
+        return State::FirstWins;
+    }
+
+    Card first_card = pop_front(first_deck);
+    Card second_card = pop_front(second_deck);
+
+    int comp = first_card.compareTo(second_card);
+
+    //starging war
+    if(comp == 0) {
+        first_war_cards.push(first_card);
+        second_war_cards.push(second_card);
+        return State::War;
+    } else {
+        if(comp > 0) { // first player won the battle
+            first_deck.push_back(first_card);
+            first_deck.push_back(second_card);
+        } else { // second won
+            second_deck.push_back(first_card);
+            second_deck.push_back(second_card);
+        }
+        return State::Battle;
+    }
+}
+
+string playWar(deque<Card>& first_deck, deque<Card>& second_deck) {
+
+    queue<Card> first_war_deck;
+    queue<Card> second_war_deck;
+    while(true) {
+        // try battle
+        auto postBattleState = doBattle(first_deck, second_deck,
+            first_war_deck, second_war_deck);
+
+        if(isEndGameState(postBattleState)) {
+            return endGameToString(postBattleState);
+        }
+    }
+}
 //endregion
 
 int main()
 {
-    auto first_deck = readPlayerCards();
-    auto second_deck = readPlayerCards();
-
+//    auto first_deck = readPlayerCards();
+//    auto second_deck = readPlayerCards();
+    auto first_deck = mockFirst();
+    auto second_deck = mockSecond();
 
     print(first_deck, second_deck);
+//    cerr << second_deck.front().compareTo(second_deck.front());
 
-//    first_deck.pop_front();
-//    first_deck.pop_front();
-    cerr << second_deck.front().compareTo(second_deck.front());
-
-    return 0;
-
-    int m; // the number of cards for player 2
-    cin >> m; cin.ignore();
-    for (int i = 0; i < m; i++) {
-        string cardp2; // the m cards of player 2
-        cin >> cardp2; cin.ignore();
-    }
-
-    // Write an action using cout. DON'T FORGET THE "<< endl"
-    // To debug: cerr << "Debug messages..." << endl;
-
-    cout << "PAT" << endl;
+    cout << playWar(first_deck, second_deck)<< endl;
 }
-
 
 deque<Card> readPlayerCards(){
     int n; cin >> n; cin.ignore();
@@ -163,4 +208,52 @@ void print(const deque<Card>& deque1, const deque<Card>& deque2) {
     cerr << "\n--------second-----------\n";
     std::copy(deque2.begin(), deque2.end(), output);
     cerr << "\n";
+}
+
+Card pop_front(deque<Card>& deck) {
+    assert(! deck.empty());
+
+    Card top = deck.front();
+    deck.pop_front();
+    return top;
+}
+
+bool isEndGameState(State state) {
+    switch (state) {
+        case State::FirstWins:
+        case State::SecondWins:
+        case State::Pat:
+            return true;
+        default:
+            return false;
+    }
+}
+
+string endGameToString(State state) {
+    switch (state) {
+        case State::FirstWins:
+            return "1";
+        case State::SecondWins:
+            return "2";
+        case State::Pat:
+            return "PAT";
+        default:
+            throw invalid_argument("not an end state");
+    }
+}
+
+deque<Card> mockFirst() {
+    return deque<Card> {
+        Card("AZ"),
+        Card("KZ"),
+        Card("QZ")
+    };
+}
+
+deque<Card> mockSecond() {
+    return deque<Card>{
+        Card("KZ"),
+        Card("QZ"),
+        Card("JZ")
+    };
 }
