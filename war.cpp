@@ -2,45 +2,78 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <climits>
-#include <iterator>
+#include <queue>
+#include <sstream>
 
 using namespace std;
+//region defs
 
+bool lexical_cast(const std::string& s, int& i);
 
+const string kCardPowers[13]{
+    "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"
+};
 
+int compare(const string&, const string&);
+
+queue<string> readPlayerCards();
+
+class Card
+{
+public:
+    Card(const string& str)  {
+
+    }
+
+private:
+    bool isDigit;
+    int digitValue;
+    char charValue;
+
+};
+
+//endregion
 
 int main()
 {
-    int N ;
-    cin >> N; cin.ignore();
-    int* strengths = new int[N];
 
-    for (int i = 0; i < N; i++) {
-        int strength; cin >> strength; cin.ignore();
-        strengths[i] = strength;
+    int i = -1;
+    cout << lexical_cast("10", i);
+    cout << "\n" << i;
+
+    return 0;
+
+    int m; // the number of cards for player 2
+    cin >> m; cin.ignore();
+    for (int i = 0; i < m; i++) {
+        string cardp2; // the m cards of player 2
+        cin >> cardp2; cin.ignore();
     }
 
-//    int* strengths = new int[3] {5, 8, 9};
+    // Write an action using cout. DON'T FORGET THE "<< endl"
+    // To debug: cerr << "Debug messages..." << endl;
 
-    ostream_iterator<int> output(cerr, " ");
-    std::copy(strengths, strengths + N, output);
+    cout << "PAT" << endl;
+}
 
-    cerr << "\n--------------sorted-------------------\n";
 
-    sort(strengths, strengths + N);
-    std::copy(strengths, strengths + N, output);
-
-    int closest_diff = strengths[1] - strengths[0];
-
-    for (int i = 1; i < N - 1; ++i) {
-        int diff = strengths[i + 1] - strengths[i];
-
-        if(diff < closest_diff) {
-            closest_diff = diff;
-        }
+queue<string> readPlayerCards(){
+    int n; // the number of cards for player 1
+    cin >> n; cin.ignore();
+    for (int i = 0; i < n; i++) {
+        string cardp1; // the n cards of player 1
+        cin >> cardp1;
+        cin.ignore();
     }
+}
 
+bool lexical_cast(const std::string& s, int& i) {
+    std::stringstream ss(s);
 
-    cout << closest_diff << endl;
+    int test;
+    if((ss >> test).fail() || !(ss >> std::ws).eof()) {
+        return false;
+    }
+    i = test;
+    return true;
 }
