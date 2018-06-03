@@ -11,27 +11,40 @@ using namespace std;
 //region defs
 
 class Card;
+struct GameDecks;
+
 bool lexical_cast(const std::string& s, int& i);
 // "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"
+
 enum Value {
     Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, J, Q, K, A
 };
 string ValueToString(Value value);
+
 enum State {
     FirstWins, SecondWins, Pat, War, Battle
 };
 bool isEndGameState(State state);
 string endGameToString(State state);
 
-deque<Card> readPlayerCards();
-void print (const deque<Card>&, const deque<Card>&);
+void readPlayerDeck(deque<Card>&);
+
+void print(const GameDecks&);
 Card pop_front(deque<Card>&);
 
-deque<Card> mockFirst();
-deque<Card> mockSecond();
-
+void mockDecks(GameDecks&);
 //endregion
 //region struct
+
+
+
+struct GameDecks
+{
+    deque<Card> first_deck;
+    deque<Card> second_deck;
+    queue<Card> first_war_cards;
+    queue<Card> second_war_cards;
+};
 
 class Card
 {
@@ -86,50 +99,53 @@ ostream& operator<< (ostream&, const Card&);
 //endregion
 //region func
 
-State doBattle(
-    deque<Card>& first_deck,
-    deque<Card>& second_deck,
-//    bool is_war,
-    queue<Card>& first_war_cards,
-    queue<Card>& second_war_cards)
+State doBattle(GameDecks& decks)
 {
-    if(first_deck.empty()) {
+    if(decks.first_deck.empty()) {
          return State::SecondWins;
     }
-    if(second_deck.empty()) {
+    if(decks.second_deck.empty()) {
         return State::FirstWins;
     }
 
-    Card first_card = pop_front(first_deck);
-    Card second_card = pop_front(second_deck);
+    Card first_card = pop_front(decks.first_deck);
+    Card second_card = pop_front(decks.second_deck);
 
     int comp = first_card.compareTo(second_card);
 
-    //starging war
+    //starting war
     if(comp == 0) {
-        first_war_cards.push(first_card);
-        second_war_cards.push(second_card);
+        decks.first_war_cards.push(first_card);
+        decks.second_war_cards.push(second_card);
         return State::War;
     } else {
         if(comp > 0) { // first player won the battle
-            first_deck.push_back(first_card);
-            first_deck.push_back(second_card);
+            decks.first_deck.push_back(first_card);
+            decks.first_deck.push_back(second_card);
         } else { // second won
-            second_deck.push_back(first_card);
-            second_deck.push_back(second_card);
+            decks.second_deck.push_back(first_card);
+            decks.second_deck.push_back(second_card);
         }
         return State::Battle;
     }
 }
 
-string playWar(deque<Card>& first_deck, deque<Card>& second_deck) {
+State doWar(GameDecks& decks)
+{
 
-    queue<Card> first_war_deck;
-    queue<Card> second_war_deck;
+}
+
+//State drawToWarQueues()
+
+string playWar(GameDecks& decks) {
+
     while(true) {
         // try battle
-        auto postBattleState = doBattle(first_deck, second_deck,
-            first_war_deck, second_war_deck);
+        auto postBattleState = doBattle(decks);
+
+//        if(postBattleState == State::War) {
+//
+//        }
 
         if(isEndGameState(postBattleState)) {
             return endGameToString(postBattleState);
@@ -140,27 +156,25 @@ string playWar(deque<Card>& first_deck, deque<Card>& second_deck) {
 
 int main()
 {
-//    auto first_deck = readPlayerCards();
-//    auto second_deck = readPlayerCards();
-    auto first_deck = mockFirst();
-    auto second_deck = mockSecond();
+    GameDecks decks;
+    readPlayerDeck(decks.first_deck);
+    readPlayerDeck(decks.second_deck);
+//    mockDecks(decks);
 
-    print(first_deck, second_deck);
+
+    print(decks);
 //    cerr << second_deck.front().compareTo(second_deck.front());
 
-    cout << playWar(first_deck, second_deck)<< endl;
+    cout << playWar(decks) << endl;
 }
 
-deque<Card> readPlayerCards(){
+void readPlayerDeck(deque<Card>& deck) {
     int n; cin >> n; cin.ignore();
 
-    deque<Card> cards;
     for (int i = 0; i < n; i++) {
         string card_str; cin >> card_str; cin.ignore();
-        cards.push_back(Card(card_str));
+        deck.push_back(Card(card_str));
     }
-
-    return cards;
 }
 
 bool lexical_cast(const std::string& s, int& i) {
@@ -201,12 +215,12 @@ string ValueToString(Value value){
     }
 }
 
-void print(const deque<Card>& deque1, const deque<Card>& deque2) {
+void print(const GameDecks& decks) {
     ostream_iterator<Card> output(cerr, " ");
     cerr << "--------first-----------\n";
-    std::copy(deque1.begin(), deque1.end(), output);
+    std::copy(decks.first_deck.begin(), decks.first_deck.end(), output);
     cerr << "\n--------second-----------\n";
-    std::copy(deque2.begin(), deque2.end(), output);
+    std::copy(decks.second_deck.begin(), decks.second_deck.end(), output);
     cerr << "\n";
 }
 
@@ -242,16 +256,13 @@ string endGameToString(State state) {
     }
 }
 
-deque<Card> mockFirst() {
-    return deque<Card> {
+void mockDecks(GameDecks& decks) {
+    decks.first_deck = deque<Card> {
         Card("AZ"),
         Card("KZ"),
         Card("QZ")
     };
-}
-
-deque<Card> mockSecond() {
-    return deque<Card>{
+    decks.second_deck = deque<Card>{
         Card("KZ"),
         Card("QZ"),
         Card("JZ")
