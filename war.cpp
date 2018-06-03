@@ -186,23 +186,28 @@ State drawToWarQueues(GameDecks& decks) {
     return State::War;
 }
 
-string playWarGame(GameDecks& decks) {
+void playWarGame(GameDecks& decks, State& end_state, int& rounds_count) {
 
+    int rounds = 0;
     while(true) {
-        // try battle
         auto post_battle_state = doBattle(decks);
 
         if (isEndGameState(post_battle_state)) {
-            return endGameToString(post_battle_state);
+            end_state = post_battle_state;
+            rounds_count = rounds;
+            return;
         }
 
         if(post_battle_state == State::War) {
             State after_war = doWar(decks);
             if(isEndGameState(after_war)) {
-                return endGameToString(after_war);
+                end_state = after_war;
+                rounds_count = rounds;
+                return;
             }
             assert(after_war == State::Battle);
         }
+        rounds++;
     }
 }//endregion
 
@@ -211,14 +216,26 @@ int main()
     GameDecks decks;
     readPlayerDeck(decks.first_deck);
     readPlayerDeck(decks.second_deck);
-//    mockDecks(decks);
+    // mockDecks(decks);
 //    mockDecksWar(decks);
 
 
     print(decks);
-//    cerr << second_deck.front().compareTo(second_deck.front());
+    State end_state;
+    int rounds = -1;
+    playWarGame(decks, end_state, rounds);
 
-    cout << playWarGame(decks) << endl;
+    string answer;
+    if(end_state == State::Pat) {
+        answer = "PAT";
+    } else if (end_state == State::FirstWins) {
+        answer = "1 " + to_string(rounds);
+    } else {
+        assert(end_state == State::SecondWins);
+        answer = "2 " + to_string(rounds);
+    }
+
+    cout << answer << endl;
 }
 
 //region impls
