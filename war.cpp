@@ -29,24 +29,22 @@ string endGameToString(State state);
 
 void readPlayerDeck(deque<Card>&);
 
-void print(const GameDecks&);
-Card pop_front(deque<Card>&);
+void print(GameDecks&);
+Card pop_return(queue<Card>&);
 
 void mockDecks(GameDecks&);
 void mockDecksWar(GameDecks&);
 bool checkIfNoMoreCards(GameDecks&, State& whoWon);
 
 State drawToWarQueues(GameDecks& decks);
-
+void pipe(deque<Card>&, queue<Card>&);
 //endregion
 //region struct
 
-
-
 struct GameDecks
 {
-    deque<Card> first_deck;
-    deque<Card> second_deck;
+    queue<Card> first_deck;
+    queue<Card> second_deck;
     queue<Card> first_war_cards;
     queue<Card> second_war_cards;
 };
@@ -112,8 +110,8 @@ State doBattle(GameDecks& decks)
         return whoWon;
     }
 
-    Card first_card = pop_front(decks.first_deck);
-    Card second_card = pop_front(decks.second_deck);
+    Card first_card = pop_return(decks.first_deck);
+    Card second_card = pop_return(decks.second_deck);
 
     int comp = first_card.compareTo(second_card);
 
@@ -124,11 +122,11 @@ State doBattle(GameDecks& decks)
         return State::War;
     } else {
         if(comp > 0) { // first player won the battle
-            decks.first_deck.push_back(first_card);
-            decks.first_deck.push_back(second_card);
+            decks.first_deck.push(first_card);
+            decks.first_deck.push(second_card);
         } else { // second won the battle
-            decks.second_deck.push_back(first_card);
-            decks.second_deck.push_back(second_card);
+            decks.second_deck.push(first_card);
+            decks.second_deck.push(second_card);
         }
         return State::Battle;
     }
@@ -150,15 +148,16 @@ State doWar(GameDecks& decks)
             return State::Pat;
         }
 
-        Card first_card = pop_front(decks.first_deck);
+        Card first_card = pop_return(decks.first_deck);
         decks.first_war_cards.push(first_card);
-        Card second_card = pop_front(decks.second_deck);
+        Card second_card = pop_return(decks.second_deck);
         decks.second_war_cards.push(second_card);
 
         int comp = first_card.compareTo(second_card);
         // continue the war
         if (comp > 0) {
             // add both war qs to first player
+
         } else if (comp < 0) {
             // add both war queues to second player
         }
@@ -175,8 +174,8 @@ State drawToWarQueues(GameDecks& decks) {
             return State::Pat;
         }
 
-        decks.first_war_cards.push(pop_front(decks.first_deck));
-        decks.second_war_cards.push(pop_front(decks.second_deck));
+        decks.first_war_cards.push(pop_return(decks.first_deck));
+        decks.second_war_cards.push(pop_return(decks.second_deck));
     }
     return State::War;
 }
@@ -241,6 +240,7 @@ bool lexical_cast(const std::string& s, int& i) {
 
 ostream& operator<<(ostream& os, const Card& card) {
     os << ValueToString(card.getValue());
+    return os;
 }
 
 string ValueToString(Value value){
@@ -266,20 +266,30 @@ string ValueToString(Value value){
     }
 }
 
-void print(const GameDecks& decks) {
-    ostream_iterator<Card> output(cerr, " ");
+void print(GameDecks& decks) {
+
+    queue<Card> first_copy, second_copy;
     cerr << "--------first-----------\n";
-    std::copy(decks.first_deck.begin(), decks.first_deck.end(), output);
+    while(! decks.first_deck.empty()) {
+        cerr << decks.first_deck.front() << " ";
+        first_copy.push(decks.first_deck.front());
+        decks.first_deck.pop();
+    }
+
     cerr << "\n--------second-----------\n";
-    std::copy(decks.second_deck.begin(), decks.second_deck.end(), output);
+    while (! decks.second_deck.empty()) {
+        cerr << decks.second_deck.front() << " ";
+        second_copy.push(decks.second_deck.front());
+        decks.second_deck.pop();
+    }
     cerr << "\n";
 }
 
-Card pop_front(deque<Card>& deck) {
-    assert(! deck.empty());
+Card pop_return(queue<Card>& q) {
+    assert(! q.empty());
 
-    Card top = deck.front();
-    deck.pop_front();
+    Card top = q.front();
+    q.pop();
     return top;
 }
 
@@ -308,16 +318,13 @@ string endGameToString(State state) {
 }
 
 void mockDecks(GameDecks& decks) {
-    decks.first_deck = deque<Card> {
-        Card("AZ"),
-        Card("KZ"),
-        Card("QZ")
-    };
-    decks.second_deck = deque<Card>{
-        Card("KZ"),
-        Card("QZ"),
-        Card("JZ")
-    };
+    decks.first_deck.push(Card("AZ"));
+    decks.first_deck.push(Card("KZ"));
+    decks.first_deck.push(Card("QZ"));
+
+    decks.second_deck.push(Card("KZ"));
+    decks.second_deck.push(Card("QZ"));
+    decks.second_deck.push(Card("JZ"));
 }
 // passing the whole struct to minimize the code
 bool checkIfNoMoreCards(GameDecks& decks, State& whoWon) {
@@ -339,26 +346,31 @@ bool checkIfNoMoreCards(GameDecks& decks, State& whoWon) {
 
 void mockDecksWar(GameDecks& decks) {
     //10D 9S 8D KH 7D 5H 6S
-    decks.first_deck = deque<Card>{
+    decks.first_deck = queue<Card>({
         Card("10D"),
         Card("9S"),
         Card("8D"),
         Card("KH"),
         Card("7D"),
         Card("5H"),
-        Card("6S"),
-    };
+        Card("6S")
+    });
     //10H 7H 5C QC 2C 4H 6D
-    decks.second_deck = deque<Card>{
+    decks.second_deck = queue<Card>({
         Card("10H"),
         Card("7H"),
         Card("5C"),
         Card("QC"),
         Card("2C"),
         Card("4H"),
-        Card("6D"),
-    };
+        Card("6D")
+    });
 }
 
+void pipe(deque<Card>& to, queue<Card>& from) {
+    while(! from.empty()) {
+        to.push_back(pop_return(from));
+    }
+}
 
 //endregion
