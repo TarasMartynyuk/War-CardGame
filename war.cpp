@@ -33,6 +33,7 @@ void print(const GameDecks&);
 Card pop_front(deque<Card>&);
 
 void mockDecks(GameDecks&);
+void mockDecksWar(GameDecks&);
 bool checkIfNoMoreCards(GameDecks&, State& whoWon);
 
 State drawToWarQueues(GameDecks& decks);
@@ -186,12 +187,12 @@ string playWar(GameDecks& decks) {
         // try battle
         auto postBattleState = doBattle(decks);
 
-        if(postBattleState == State::War) {
-
+        if (isEndGameState(postBattleState)) {
+            return endGameToString(postBattleState);
         }
 
-        if(isEndGameState(postBattleState)) {
-            return endGameToString(postBattleState);
+        if(postBattleState == State::War) {
+            doWar(decks);
         }
     }
 }
@@ -204,9 +205,10 @@ string playWar(GameDecks& decks) {
 int main()
 {
     GameDecks decks;
-    readPlayerDeck(decks.first_deck);
-    readPlayerDeck(decks.second_deck);
+//    readPlayerDeck(decks.first_deck);
+//    readPlayerDeck(decks.second_deck);
 //    mockDecks(decks);
+    mockDecksWar(decks);
 
 
     print(decks);
@@ -325,14 +327,38 @@ bool checkIfNoMoreCards(GameDecks& decks, State& whoWon) {
     if(first_lost && second_lost) {
         whoWon = State::Pat;
         return true;
-    } else if (! first_lost) {
+    } else if (second_lost) {
         whoWon = State::FirstWins;
         return true;
-    } else {
+    } else if (first_lost) {
         whoWon = State::SecondWins;
         return true;
     }
     return false;
 }
+
+void mockDecksWar(GameDecks& decks) {
+    //10D 9S 8D KH 7D 5H 6S
+    decks.first_deck = deque<Card>{
+        Card("10D"),
+        Card("9S"),
+        Card("8D"),
+        Card("KH"),
+        Card("7D"),
+        Card("5H"),
+        Card("6S"),
+    };
+    //10H 7H 5C QC 2C 4H 6D
+    decks.second_deck = deque<Card>{
+        Card("10H"),
+        Card("7H"),
+        Card("5C"),
+        Card("QC"),
+        Card("2C"),
+        Card("4H"),
+        Card("6D"),
+    };
+}
+
 
 //endregion
